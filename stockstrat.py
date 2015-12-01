@@ -12,6 +12,7 @@ import pandas.io.data as web
 import random; random.seed(0)
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
 
 
 def get_px(stock, start, end):
@@ -43,8 +44,6 @@ def calc_drawdown(stock,window,option='day_dd'):
         return daily_drawdown
     if option=='max_dd':
         return max_daily_drawdown
-        
-        #Refactor
         
 def calc_drawdown_length(stock):
     '''
@@ -119,17 +118,17 @@ def create_dataframes(window):
     
     for idx,win in enumerate(window):
         df_string='px_drawdown'+str(win)
-        df_string=DataFrame({tkr:calc_drawdown(tkr,win,'max_dd') for tkr in tickers})      
+        df_string=DataFrame({tkr:calc_drawdown(tkr,win,'day_dd') for tkr in tickers})      
         arr_df.append(df_string)
         
     return pd.concat(arr_df,axis=1,keys=window,names=['Number_days','stock'])
     
 if __name__ == "__main__":
     #Set portfolio
-    tickers=['NOV']    
+    tickers=['NOV','AAPL','WAT','COH']    
     
     #Read the data into a dataFrame
-    px=DataFrame({n:get_px(n,'1/1/2012','11/24/2015') for n in tickers})
+    px=DataFrame({n:get_px(n,'1/1/2009','11/24/2015') for n in tickers})
     
     '''
     Here, we will analyze drawdowns for 3 distinct periods, Yearly, Quarterly
@@ -137,12 +136,12 @@ if __name__ == "__main__":
     '''
     
     #Set the desired time periods
-    windows=[21]#,63,252]
+    windows=[21,63,252]
+    
+    #Drawdowns should be positive and expressed as a percentage.
     df_drawdowns=create_dataframes(windows)*-100
-    df_drawdowns.plot()
     
-    #For each stock, a basic statistical description is provided
-    
+    #For each stock, provide a statistical overview of the data
     df_stat_desc=df_drawdowns.groupby(level='stock', axis=1).describe()
     
     #Drawdowns on yearly basis
@@ -164,27 +163,23 @@ if __name__ == "__main__":
     dd_2014=df_drawdowns['2014-01-01':'2014-12-31']
     dd_2014_ri=dd_2014.mean().reset_index(name='Average Drawdown in 2014')
     
-    #Creating bins and histograms
+    #Creates histograms based on drawdown magnitudes
     bins_dd = np.linspace(0,30,61)
-    
-    #Get One of the ticker's columns of data- NOV 21 moving avg
-    dd_hist=df_drawdowns#.iloc[:,0]
-    
-    dd_hist.hist(bins=bins_dd, alpha=0.3, color='k',normed=True)
+    dd_hist=df_drawdowns
+    dd_hist.hist(bins=bins_dd, alpha=0.75,color='green',normed=True)
     dd_hist.plot(kind='kde',style='k--')
-    
+
     '''
     Drawdown analysis-This code plots a histogram of a stocks drawdown length
     characteristics.  Ensure that stock ticker used in this function has already
     been placed in the ticker list. 
     '''
-    stock_dd_length=calc_drawdown_local('NOV',252)
+
+    stock_dd_length=calc_drawdown_local('WAT',63)
     dd_len_hist=DataFrame(stock_dd_length)
     bins_len_dd=np.linspace(0,30,31)
-    dd_len_hist.hist(bins=bins_len_dd, alpha=0.3, color='k',normed=True)
-    
-    #Drawdown length statistics
-    
+    dd_len_hist.hist(bins=bins_len_dd, alpha=0.55, color='purple',normed=True)
+    plt.title('Drawdown lengths - WAT') 
     dd_len_hist.describe()
     
     
